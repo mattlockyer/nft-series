@@ -48,27 +48,30 @@ describe('NFT Series', function () {
 			contractId,
 			methodName: 'nft_create_type',
 			args: {
-				token_metadata: {
+				metadata: {
 					title: token_type_title,
 					media: 'https://placedog.net/500',
 					copies: 1,
+				},
+				royalty: {
+					[contractId]: 1000,
 				}
 			},
 			gas,
 			attachedDeposit: parseNearAmount('0.1')
 		})
 
-		const [token_type_id, owner_id, type_metadata] = await contractAccount.viewFunction(
+		const token_type = await contractAccount.viewFunction(
 			contractId,
-			'nft_get_type_info',
+			'nft_get_type',
 			{
 				token_type_title
 			}
 		)
 
-		assert.strictEqual(token_type_id, 1);
-		assert.strictEqual(owner_id, contractId);
-		assert.strictEqual(type_metadata.copies, 1);
+		assert.strictEqual(token_type.owner_id, contractId);
+		assert.strictEqual(token_type.metadata.copies, 1);
+		assert.strictEqual(token_type.royalty[contractId], 1000);
 
 		const types = await contractAccount.viewFunction(
 			contractId,
