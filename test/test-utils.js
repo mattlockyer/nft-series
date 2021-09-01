@@ -9,6 +9,7 @@ const {
 	networkId, contractName, contractMethods, gas,
 	DEFAULT_NEW_ACCOUNT_AMOUNT, 
 	DEFAULT_NEW_CONTRACT_AMOUNT,
+	GUESTS_ACCOUNT_SECRET,
 } = getConfig('testnet');
 
 const TEST_HOST = 'http://localhost:3000';
@@ -41,10 +42,10 @@ const initAccount = async(accountId, secret) => {
 	account = new nearAPI.Account(connection, accountId);
 	const newKeyPair = KeyPair.fromString(secret);
 	keyStore.setKey(networkId, accountId, newKeyPair);
-	return account
-}
+	return account;
+};
 
-const createOrInitAccount = async(accountId, secret, amount = DEFAULT_NEW_CONTRACT_AMOUNT) => {
+const createOrInitAccount = async(accountId, secret = GUESTS_ACCOUNT_SECRET, amount = DEFAULT_NEW_CONTRACT_AMOUNT) => {
 	let account;
 	try {
 		account = await createAccount(accountId, amount, secret);
@@ -52,7 +53,7 @@ const createOrInitAccount = async(accountId, secret, amount = DEFAULT_NEW_CONTRA
 		if (!/because it already exists/.test(e.toString())) {
 			throw e;
 		}
-		account = initAccount(accountId, secret)
+		account = initAccount(accountId, secret);
 	}
 	return account;
 };
@@ -159,8 +160,8 @@ const loadCredentials = (accountId) => {
 		);
 	}
 
-	return credentials
-}
+	return credentials;
+};
 
 module.exports = { 
 	TEST_HOST,

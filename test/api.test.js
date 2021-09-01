@@ -1,30 +1,62 @@
+const fs = require('fs');
 const assert = require('assert');
-const { parseNearAmount } = require('near-api-js/lib/utils/format');
 const testUtils = require('./test-utils');
+const nearAPI = require('near-api-js');
+const BN = require('bn.js');
+const {
+	utils: { format: { parseNearAmount, formatNearAmount } },
+	transactions: { deployContract, functionCall }
+} = nearAPI;
 
 const {
 	gas,
 	contractId,
 	contractAccount,
 	getAccount,
+	createOrInitAccount,
+	getAccountBalance,
 } = testUtils;
 
-describe('NFT Series', function () {
-	this.timeout(10000);
+const TOKEN_DELIMETER = ':';
+const CONTRACT_TOKEN_DELIMETER = '||';
 
-	const now = Date.now().toString()
-	let token_type_title = 'dog-' + now
+describe('NFT Series', function () {
+	this.timeout(30000);
+
+	const now = Date.now().toString();
+	let token_type_title = 'dog-' + now;
+	let token_id;
 
 	/// users
 	const aliceId = 'alice-' + now + '.' + contractId;
-	let alice
-	it('should create user accounts', async function () {
+	const bobId = 'bob-' + now + '.' + contractId;
+	const marketId = 'market.' + contractId;
+	let alice, bob, market;
+	it('should create user & contract accounts', async function () {
 		alice = await getAccount(aliceId);
-		console.log('\n\n alice accountId:', aliceId, '\n\n');
-	})
+		bob = await getAccount(bobId);
+		console.log('\n\n created:', aliceId, '\n\n');
+
+		market = await createOrInitAccount(marketId);
+		const marketState = await market.state();
+		if (marketState.code_hash === '11111111111111111111111111111111') {
+
+			const marketBytes = fs.readFileSync('./out/market.wasm');
+			console.log('\n\n deploying market contractBytes:', marketBytes.length, '\n\n');
+			const newMarketArgs = {
+				owner_id: contractId,
+			};
+			const actions = [
+				deployContract(marketBytes),
+				functionCall('new', newMarketArgs, gas)
+			];
+			await market.signAndSendTransaction(marketId, actions);
+			console.log('\n\n created:', marketId, '\n\n');
+		}
+	});
 
 	it('should be deployed', async function () {
-		const state = await contractAccount.state()
+		const state = await contractAccount.state();
 		try {
 			await contractAccount.functionCall({
 				contractId,
@@ -33,10 +65,10 @@ describe('NFT Series', function () {
 					owner_id: contractId
 				},
 				gas
-			})
+			});
 		} catch (e) {
 			if (!/contract has already been initialized/.test(e.toString())) {
-				console.warn(e)
+				console.warn(e);
 			}
 		}
 
@@ -54,12 +86,12 @@ describe('NFT Series', function () {
 					copies: 1,
 				},
 				royalty: {
-					[contractId]: 1000,
+					[bobId]: 1000,
 				}
 			},
 			gas,
 			attachedDeposit: parseNearAmount('0.1')
-		})
+		});
 
 		const token_type = await contractAccount.viewFunction(
 			contractId,
@@ -67,22 +99,11 @@ describe('NFT Series', function () {
 			{
 				token_type_title
 			}
-		)
+		);
 
 		assert.strictEqual(token_type.owner_id, contractId);
 		assert.strictEqual(token_type.metadata.copies, 1);
-		assert.strictEqual(token_type.royalty[contractId], 1000);
-
-		const types = await contractAccount.viewFunction(
-			contractId,
-			'nft_get_types',
-			{
-				limit: 10
-			}
-		)
-
-		console.log(types)
-		assert.strictEqual(types.length, 1);
+		assert.strictEqual(token_type.royalty[bobId], 1000);
 	});
 
 	it('should NOT allow a NON owner to mint copies', async function () {
@@ -96,10 +117,10 @@ describe('NFT Series', function () {
 				},
 				gas,
 				attachedDeposit: parseNearAmount('0.1')
-			})
-			assert(false)
+			});
+			assert(false);
 		} catch(e) {
-			assert(true)
+			assert(true);
 		}
 	});
 
@@ -107,7 +128,7 @@ describe('NFT Series', function () {
 
 		// const stateBefore = await (await getAccount(contractId)).state();
 		// console.log('stateBefore', stateBefore)
-
+		const contractBalanceBefore = (await getAccountBalance(contractId)).available
 		await contractAccount.functionCall({
 			contractId,
 			methodName: 'nft_mint_type',
@@ -117,7 +138,9 @@ describe('NFT Series', function () {
 			},
 			gas,
 			attachedDeposit: parseNearAmount('0.1')
-		})
+		});
+		const contractBalanceAfter = (await getAccountBalance(contractId)).available
+		console.log('\n\n\n Contract Balance Available', formatNearAmount(new BN(contractBalanceBefore).sub(new BN(contractBalanceAfter)).toString(), 6))
 
 		// const stateAfter = await (await getAccount(contractId)).state();
 		// console.log('stateAfter', stateAfter)
@@ -128,7 +151,7 @@ describe('NFT Series', function () {
 			{
 				token_type_title
 			}
-		)
+		);
 		assert.strictEqual(parseInt(supply_for_type, 10), 1);
 
 		const tokens = await contractAccount.viewFunction(
@@ -137,17 +160,16 @@ describe('NFT Series', function () {
 			{
 				token_type_title
 			}
-		)
+		);
 		const [TOKEN_DELIMETER, TITLE_DELIMETER, EDITION_DELIMETER] = await contractAccount.viewFunction(
 			contractId,
 			'nft_get_type_format',
-		)
-		const { token_id, owner_id, metadata: { title, copies } } = tokens[0]
-		const formattedTitle = `${token_type_title}${TITLE_DELIMETER}${token_id.split(TOKEN_DELIMETER)[1]}${EDITION_DELIMETER}${copies}`
-
-		assert.strictEqual(token_id, '1:1');
-		assert.strictEqual(title, formattedTitle);
+		);
+		const { token_id: _token_id, owner_id, metadata: { title, copies } } = tokens[tokens.length - 1];
 		assert.strictEqual(owner_id, contractId);
+		token_id = _token_id;
+		const formattedTitle = `${token_type_title}${TITLE_DELIMETER}${token_id.split(TOKEN_DELIMETER)[1]}${EDITION_DELIMETER}${copies}`;
+		assert.strictEqual(title, formattedTitle);
 	});
 
 	it('should NOT allow the owner to mint more than copies', async function () {
@@ -161,10 +183,80 @@ describe('NFT Series', function () {
 				},
 				gas,
 				attachedDeposit: parseNearAmount('0.1')
-			})
-			assert(false)
+			});
+			assert(false);
 		} catch(e) {
-			assert(true)
+			assert(true);
 		}
 	});
-})
+
+	it('should allow the owner to transfer the nft', async function () {
+		console.log('\n\n\ token_id', token_id);
+
+		await contractAccount.functionCall({
+			contractId: contractId,
+			methodName: 'nft_transfer',
+			args: {
+				receiver_id: aliceId,
+				token_id,
+			},
+			gas,
+			attachedDeposit: '1'
+		});
+
+		const { owner_id } = await contractAccount.viewFunction(
+			contractId,
+			'nft_token',
+			{ token_id }
+		);
+		assert.strictEqual(owner_id, aliceId);
+	});
+
+	it('should allow alice to list the token for sale', async function () {
+		let sale_args = {
+			sale_conditions: {
+				near: parseNearAmount('1')
+			},
+			token_type: token_id.split(TOKEN_DELIMETER)[0],
+			is_auction: false,
+		};
+
+		await alice.functionCall({
+			contractId: contractId,
+			methodName: 'nft_approve',
+			args: {
+				token_id,
+				account_id: marketId,
+				msg: JSON.stringify(sale_args)
+			},
+			gas,
+			attachedDeposit: parseNearAmount('0.01')
+		});
+	});
+
+	it('should allow someone to buy the token and should have paid alice a royalty', async function () {
+		const bobBalanceBefore = (await getAccountBalance(bobId)).total
+
+		await contractAccount.functionCall({
+			contractId: marketId,
+			methodName: 'offer',
+			args: {
+				nft_contract_id: contractId,
+				token_id: token_id,
+			},
+			gas,
+			attachedDeposit: parseNearAmount('1')
+		});
+
+		const bobBalanceAfter = (await getAccountBalance(bobId)).total
+		
+		assert.strictEqual(new BN(bobBalanceAfter).sub(new BN(bobBalanceBefore)).toString(), parseNearAmount('0.1'));
+		const { owner_id } = await contractAccount.viewFunction(
+			contractId,
+			'nft_token',
+			{ token_id }
+		);
+		console.log(owner_id)
+		assert.strictEqual(owner_id, contractId);
+	});
+});
