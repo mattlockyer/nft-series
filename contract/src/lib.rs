@@ -216,7 +216,7 @@ impl Contract {
 		&mut self,
 		receiver_id: AccountId,
 		token_id: TokenId,
-		approval_id: U64,
+		approval_id: u64,
 		memo: Option<String>,
 		balance: Option<U128>,
 		max_len_payout: Option<u32>,
@@ -229,7 +229,7 @@ impl Contract {
 			self.nft_mint_type(token_type_title, receiver_id)
 		} else {
 			let prev_token = self.nft_token(token_id.clone()).expect("no token");
-			self.tokens.nft_transfer(receiver_id, token_id.clone(), Some(approval_id.into()), memo);
+			self.tokens.nft_transfer(receiver_id, token_id.clone(), Some(approval_id), memo);
 			prev_token
 		};
 

@@ -16,7 +16,7 @@ trait NonFungibleTokenApprovalsReceiver {
         &mut self,
         token_id: TokenId,
         owner_id: AccountId,
-        approval_id: U64,
+        approval_id: u64,
         msg: String,
     );
 }
@@ -28,7 +28,7 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
         &mut self,
         token_id: TokenId,
         owner_id: AccountId,
-        approval_id: U64,
+        approval_id: u64,
         msg: String,
     ) {
         self.check_valid_callback(owner_id.clone());
@@ -139,7 +139,7 @@ impl NonFungibleTokenApprovalsReceiver for Contract {
 //             &Sale {
 //                 owner_id: owner_id.clone().into(),
 //                 created_at: env::block_timestamp().into(),
-//                 approval_id: U64(0),
+//                 approval_id: u64(0),
 //                 nft_contract_id: nft_contract_id.clone(),
 //                 token_id: series_name.clone(),
 //                 conditions,
