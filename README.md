@@ -1,5 +1,9 @@
 # NFT Series Implementation
 
+# WARNING
+
+This is using some non-standard stuff
+
 ## Instructions
 
 `yarn && yarn test:deploy`
