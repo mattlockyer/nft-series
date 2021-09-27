@@ -17,11 +17,13 @@ const {
 	getAccountBalance,
 } = testUtils;
 
+const COPIES_TO_MINT = 2;
+const APPROVALS_TO_ATTEMPT = 2;
 const TOKEN_DELIMETER = ':';
 const CONTRACT_TOKEN_DELIMETER = '||';
 
 describe('NFT Series', function () {
-	this.timeout(30000);
+	this.timeout(60000);
 
 	const now = Date.now().toString();
 	let token_type_title = 'dog-' + now;
@@ -83,7 +85,7 @@ describe('NFT Series', function () {
 				metadata: {
 					title: token_type_title,
 					media: 'https://placedog.net/500',
-					copies: 1,
+					copies: COPIES_TO_MINT,
 				},
 				royalty: {
 					[bobId]: 1000,
@@ -102,7 +104,7 @@ describe('NFT Series', function () {
 		);
 
 		assert.strictEqual(token_type.owner_id, contractId);
-		assert.strictEqual(token_type.metadata.copies, 1);
+		assert.strictEqual(token_type.metadata.copies, COPIES_TO_MINT);
 		assert.strictEqual(token_type.royalty[bobId], 1000);
 	});
 
@@ -128,19 +130,23 @@ describe('NFT Series', function () {
 
 		// const stateBefore = await (await getAccount(contractId)).state();
 		// console.log('stateBefore', stateBefore)
-		const contractBalanceBefore = (await getAccountBalance(contractId)).available
-		await contractAccount.functionCall({
-			contractId,
-			methodName: 'nft_mint_type',
-			args: {
-				token_type_title,
-				receiver_id: contractId
-			},
-			gas,
-			attachedDeposit: parseNearAmount('0.1')
-		});
-		const contractBalanceAfter = (await getAccountBalance(contractId)).available
-		console.log('\n\n\n Contract Balance Available', formatNearAmount(new BN(contractBalanceBefore).sub(new BN(contractBalanceAfter)).toString(), 6))
+		const contractBalanceBefore = (await getAccountBalance(contractId)).available;
+
+		for (let i = 0; i < COPIES_TO_MINT; i++) {
+			await contractAccount.functionCall({
+				contractId,
+				methodName: 'nft_mint_type',
+				args: {
+					token_type_title,
+					receiver_id: contractId
+				},
+				gas,
+				attachedDeposit: parseNearAmount('0.1')
+			});
+		}
+		
+		const contractBalanceAfter = (await getAccountBalance(contractId)).available;
+		console.log('\n\n\n Contract Balance Available', formatNearAmount(new BN(contractBalanceBefore).sub(new BN(contractBalanceAfter)).toString(), 6));
 
 		// const stateAfter = await (await getAccount(contractId)).state();
 		// console.log('stateAfter', stateAfter)
@@ -152,7 +158,7 @@ describe('NFT Series', function () {
 				token_type_title
 			}
 		);
-		assert.strictEqual(parseInt(supply_for_type, 10), 1);
+		assert.strictEqual(parseInt(supply_for_type, 10), COPIES_TO_MINT);
 
 		const tokens = await contractAccount.viewFunction(
 			contractId,
@@ -221,21 +227,29 @@ describe('NFT Series', function () {
 			is_auction: false,
 		};
 
-		await alice.functionCall({
-			contractId: contractId,
-			methodName: 'nft_approve',
-			args: {
-				token_id,
-				account_id: marketId,
-				msg: JSON.stringify(sale_args)
-			},
-			gas,
-			attachedDeposit: parseNearAmount('0.01')
-		});
+		for (let i = 0; i < APPROVALS_TO_ATTEMPT; i++) {
+			try {
+				await alice.functionCall({
+					contractId: contractId,
+					methodName: 'nft_approve',
+					args: {
+						token_id,
+						account_id: marketId,
+						msg: JSON.stringify(i === APPROVALS_TO_ATTEMPT - 1 ? sale_args : {})
+					},
+					gas,
+					attachedDeposit: parseNearAmount('0.01')
+				});
+			} catch(e) {
+				// swallow and keep iterating
+				console.warn(e)
+			}
+		}
+		
 	});
 
 	it('should allow someone to buy the token and should have paid alice a royalty', async function () {
-		const bobBalanceBefore = (await getAccountBalance(bobId)).total
+		const bobBalanceBefore = (await getAccountBalance(bobId)).total;
 
 		await contractAccount.functionCall({
 			contractId: marketId,
@@ -248,7 +262,7 @@ describe('NFT Series', function () {
 			attachedDeposit: parseNearAmount('1')
 		});
 
-		const bobBalanceAfter = (await getAccountBalance(bobId)).total
+		const bobBalanceAfter = (await getAccountBalance(bobId)).total;
 		
 		assert.strictEqual(new BN(bobBalanceAfter).sub(new BN(bobBalanceBefore)).toString(), parseNearAmount('0.1'));
 		const { owner_id } = await contractAccount.viewFunction(
@@ -256,7 +270,7 @@ describe('NFT Series', function () {
 			'nft_token',
 			{ token_id }
 		);
-		console.log(owner_id)
+		console.log(owner_id);
 		assert.strictEqual(owner_id, contractId);
 	});
 });
