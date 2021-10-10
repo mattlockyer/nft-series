@@ -141,6 +141,17 @@ impl Contract {
         refund_deposit(env::storage_usage() - initial_storage_usage);
     }
 
+	pub fn cap_copies(
+		&mut self,
+		token_type_title: TokenTypeTitle,
+	) {
+		assert_eq!(env::predecessor_account_id(), self.tokens.owner_id, "Unauthorized");
+		let token_type_id = self.token_type_by_title.get(&token_type_title).expect("no type");
+		let mut token_type = self.token_type_by_id.get(&token_type_id).expect("no token");
+		token_type.metadata.copies = Some(token_type.tokens.len());
+		self.token_type_by_id.insert(&token_type_id, &token_type);
+	}
+
 	#[payable]
 	pub fn nft_mint_type(
 		&mut self,
@@ -169,7 +180,7 @@ impl Contract {
 			media: None, // URL to associated media, preferably to decentralized, content-addressed storage
 			copies: None, // number of copies of this set of metadata in existence when token was minted.
 		});
-		let token = self.tokens.mint(token_id, receiver_id, metadata);
+		let token = self.tokens.internal_mint(token_id, receiver_id, metadata);
 
         refund_deposit(env::storage_usage() - initial_storage_usage);
 		token

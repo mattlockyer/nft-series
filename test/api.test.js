@@ -85,7 +85,7 @@ describe('NFT Series', function () {
 				metadata: {
 					title: token_type_title,
 					media: 'https://placedog.net/500',
-					copies: COPIES_TO_MINT,
+					copies: COPIES_TO_MINT * 2,
 				},
 				royalty: {
 					[bobId]: 1000,
@@ -104,7 +104,8 @@ describe('NFT Series', function () {
 		);
 
 		assert.strictEqual(token_type.owner_id, contractId);
-		assert.strictEqual(token_type.metadata.copies, COPIES_TO_MINT);
+		assert.strictEqual(token_type.metadata.copies, COPIES_TO_MINT * 2);
+		console.log(token_type.metadata.copies)
 		assert.strictEqual(token_type.royalty[bobId], 1000);
 	});
 
@@ -178,6 +179,27 @@ describe('NFT Series', function () {
 		assert.strictEqual(title, formattedTitle);
 	});
 
+	it('should allow the owner cap the copies to whatever is already minted', async function () {
+		await contractAccount.functionCall({
+			contractId,
+			methodName: 'cap_copies',
+			args: {
+				token_type_title,
+			},
+			gas,
+		});
+
+		const token_type = await contractAccount.viewFunction(
+			contractId,
+			'nft_get_type',
+			{
+				token_type_title
+			}
+		);
+
+		assert.strictEqual(token_type.metadata.copies, COPIES_TO_MINT);
+	});
+
 	it('should NOT allow the owner to mint more than copies', async function () {
 		try {
 			await contractAccount.functionCall({
@@ -235,7 +257,7 @@ describe('NFT Series', function () {
 					args: {
 						token_id,
 						account_id: marketId,
-						msg: JSON.stringify(i === APPROVALS_TO_ATTEMPT - 1 ? sale_args : {})
+						msg: JSON.stringify(sale_args)
 					},
 					gas,
 					attachedDeposit: parseNearAmount('0.01')

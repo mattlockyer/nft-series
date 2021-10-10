@@ -230,7 +230,7 @@ checksum = "8452105ba047068f40ff7093dd1d9da90898e63dd61736462e9cdda6a90ad3c3"
 [[package]]
 name = "near-contract-standards"
 version = "4.0.0-pre.2"
-source = "git+https://github.com/mattlockyer/near-sdk-rs?rev=b68ac0b#b68ac0be451af17899de9a069d24212073de77f5"
+source = "git+https://github.com/mattlockyer/near-sdk-rs?rev=4b15a17#4b15a172ab0fd2a1bfc59ebfe042f081fd57d852"
 dependencies = [
  "near-sdk",
 ]
@@ -293,7 +293,7 @@ dependencies = [
 [[package]]
 name = "near-sdk"
 version = "4.0.0-pre.2"
-source = "git+https://github.com/mattlockyer/near-sdk-rs?rev=b68ac0b#b68ac0be451af17899de9a069d24212073de77f5"
+source = "git+https://github.com/mattlockyer/near-sdk-rs?rev=4b15a17#4b15a172ab0fd2a1bfc59ebfe042f081fd57d852"
 dependencies = [
  "base64",
  "borsh",
@@ -310,7 +310,7 @@ dependencies = [
 [[package]]
 name = "near-sdk-macros"
 version = "4.0.0-pre.2"
-source = "git+https://github.com/mattlockyer/near-sdk-rs?rev=b68ac0b#b68ac0be451af17899de9a069d24212073de77f5"
+source = "git+https://github.com/mattlockyer/near-sdk-rs?rev=4b15a17#4b15a172ab0fd2a1bfc59ebfe042f081fd57d852"
 dependencies = [
  "Inflector",
  "proc-macro2",
@@ -321,7 +321,7 @@ dependencies = [
 [[package]]
 name = "near-sys"
 version = "0.1.0"
-source = "git+https://github.com/mattlockyer/near-sdk-rs?rev=b68ac0b#b68ac0be451af17899de9a069d24212073de77f5"
+source = "git+https://github.com/mattlockyer/near-sdk-rs?rev=4b15a17#4b15a172ab0fd2a1bfc59ebfe042f081fd57d852"
 
 [[package]]
 name = "near-vm-errors"
