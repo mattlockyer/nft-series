@@ -11,7 +11,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap, UnorderedSet};
 use near_sdk::json_types::{U64, U128};
 use near_sdk::{
-    env, near_bindgen, Balance, AccountId, BorshStorageKey, PanicOnDefault, Promise, PromiseOrValue,
+    env, near_bindgen, serde_json::json, Balance, AccountId, BorshStorageKey, PanicOnDefault, Promise, PromiseOrValue,
 };
 use near_sdk::serde::{Deserialize, Serialize};
 
@@ -19,6 +19,8 @@ use near_sdk::serde::{Deserialize, Serialize};
 
 /// payout type for royalties to market
 pub type Payout = HashMap<AccountId, U128>;
+/// log type const
+pub const EVENT_JSON: &str = "EVENT_JSON:";
 /// between token_type_id and edition number e.g. 42:2 where 42 is type and 2 is edition
 pub const TOKEN_DELIMETER: char = ':';
 /// TokenMetadata.title returned for individual token e.g. "Title — 2/10" where 10 is max copies
@@ -180,9 +182,22 @@ impl Contract {
 			media: None, // URL to associated media, preferably to decentralized, content-addressed storage
 			copies: None, // number of copies of this set of metadata in existence when token was minted.
 		});
-		let token = self.tokens.internal_mint(token_id, receiver_id, metadata);
+		let token = self.tokens.internal_mint(token_id.clone(), receiver_id.clone(), metadata);
 
         refund_deposit(env::storage_usage() - initial_storage_usage);
+
+		env::log_str(format!("{}{}", EVENT_JSON, json!({
+			"standard": "nep171",
+			"version": "1.0.0",
+			"event": "nft_mint",
+			"data": [
+			  	{
+					  "owner_id": receiver_id,
+					  "token_ids": [token_id]
+				}
+			]
+		})).as_ref());
+			
 		token
 	}
 
@@ -229,10 +244,10 @@ impl Contract {
 		let type_mint_args = memo.clone();
 		let previous_token = if let Some(type_mint_args) = type_mint_args {
 			let TypeMintArgs{token_type_title, receiver_id} = near_sdk::serde_json::from_str(&type_mint_args).expect("invalid TypeMintArgs");
-			self.nft_mint_type(token_type_title, receiver_id)
+			self.nft_mint_type(token_type_title, receiver_id.clone())
 		} else {
 			let prev_token = self.nft_token(token_id.clone()).expect("no token");
-			self.tokens.nft_transfer(receiver_id, token_id.clone(), Some(approval_id), memo);
+			self.tokens.nft_transfer(receiver_id.clone(), token_id.clone(), Some(approval_id), memo);
 			prev_token
 		};
 
@@ -259,11 +274,22 @@ impl Contract {
                 }
             }
             // payout to seller
-            payout.insert(owner_id, U128((complete_royalty - total_royalty_percentage as u128) * balance_piece));
+            payout.insert(owner_id.clone(), U128((complete_royalty - total_royalty_percentage as u128) * balance_piece));
             Some(payout)
         } else {
             None
         };
+
+		env::log_str(format!("{}{}", EVENT_JSON, json!({
+			"standard": "nep171",
+			"version": "1.0.0",
+			"event": "nft_transfer",
+			"data": [
+				{
+					"old_owner_id": owner_id, "new_owner_id": receiver_id, "token_ids": [token_id]
+				}
+			]
+		})).as_ref());
 
         payout
 	}
