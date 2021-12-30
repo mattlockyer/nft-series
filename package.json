@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "license": "MIT",
   "scripts": {
-    "build:contract": "cd contract && ./build.sh && cd ..",
-    "build:market": "cd market && ./build.sh && cd ..",
-    "build:all": "yarn build:contract && yarn build:market",
-    "patch:config": "node ./utils/patch-config.js",
-    "dev:deploy": "rm -rf neardev && (near dev-deploy || exit 0) && yarn patch:config",
-    "test:deploy": "yarn build:all && yarn dev:deploy && mocha",
+    "build-contract": "cd contract && ./build.sh && cd ..",
+    "build-market": "cd market && ./build.sh && cd ..",
+    "build-all": "yarn build-contract && yarn build-market",
+    "patch-config": "node ./utils/patch-config.js",
+    "dev-deploy": "rm -rf neardev && (near dev-deploy || exit 0) && yarn patch-config",
+    "test-deploy": "yarn build-all && yarn dev-deploy && mocha",
 	"fix": "eslint test/ --fix",
     "test": "mocha"
   },
