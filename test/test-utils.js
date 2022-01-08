@@ -21,8 +21,8 @@ async function initContract() {
 			owner_id: contractAccount.accountId,
 			"metadata": {
 				"spec": "nft-1",
-				"name": "UHHM NFT - Hip Hop Heads",
-				"symbol": "HHH"
+				"name": "NFT Series",
+				"symbol": "NFT"
 			},
 			supply_cap_by_type: {
 				test: '1000000',

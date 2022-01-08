@@ -26,7 +26,7 @@ describe('NFT Series', function () {
 	this.timeout(60000);
 
 	const now = Date.now().toString();
-	let token_type_title = 'dog-' + now;
+	let token_series_title = 'dog-' + now;
 	let token_id;
 
 	/// users
@@ -77,13 +77,13 @@ describe('NFT Series', function () {
 		assert.notStrictEqual(state.code_hash, '11111111111111111111111111111111');
 	});
 
-	it('should allow someone to create a type', async function () {
+	it('should allow someone to create a series', async function () {
 		await contractAccount.functionCall({
 			contractId,
-			methodName: 'nft_create_type',
+			methodName: 'nft_create_series',
 			args: {
 				metadata: {
-					title: token_type_title,
+					title: token_series_title,
 					media: 'https://placedog.net/500',
 					copies: COPIES_TO_MINT * 2,
 				},
@@ -95,27 +95,27 @@ describe('NFT Series', function () {
 			attachedDeposit: parseNearAmount('0.1')
 		});
 
-		const token_type = await contractAccount.viewFunction(
+		const token_series = await contractAccount.viewFunction(
 			contractId,
-			'nft_get_type',
+			'nft_get_series_json',
 			{
-				token_type_title
+				token_series_title
 			}
 		);
 
-		assert.strictEqual(token_type.owner_id, contractId);
-		assert.strictEqual(token_type.metadata.copies, COPIES_TO_MINT * 2);
-		console.log(token_type.metadata.copies)
-		assert.strictEqual(token_type.royalty[bobId], 1000);
+		assert.strictEqual(token_series.owner_id, contractId);
+		assert.strictEqual(token_series.metadata.copies, COPIES_TO_MINT * 2);
+		console.log(token_series.metadata.copies)
+		assert.strictEqual(token_series.royalty[bobId], 1000);
 	});
 
 	it('should NOT allow a NON owner to mint copies', async function () {
 		try {
 			await alice.functionCall({
 				contractId,
-				methodName: 'nft_mint_type',
+				methodName: 'nft_mint_series',
 				args: {
-					token_type_title,
+					token_series_title,
 					receiver_id: contractId
 				},
 				gas,
@@ -127,7 +127,7 @@ describe('NFT Series', function () {
 		}
 	});
 
-	it('should allow the owner to mint a token of a particular type', async function () {
+	it('should allow the owner to mint a token of a particular series', async function () {
 
 		// const stateBefore = await (await getAccount(contractId)).state();
 		// console.log('stateBefore', stateBefore)
@@ -136,9 +136,9 @@ describe('NFT Series', function () {
 		for (let i = 0; i < COPIES_TO_MINT; i++) {
 			await contractAccount.functionCall({
 				contractId,
-				methodName: 'nft_mint_type',
+				methodName: 'nft_mint_series',
 				args: {
-					token_type_title,
+					token_series_title,
 					receiver_id: contractId
 				},
 				gas,
@@ -152,30 +152,30 @@ describe('NFT Series', function () {
 		// const stateAfter = await (await getAccount(contractId)).state();
 		// console.log('stateAfter', stateAfter)
 
-		const supply_for_type = await contractAccount.viewFunction(
+		const supply_for_series = await contractAccount.viewFunction(
 			contractId,
-			'nft_supply_for_type',
+			'nft_supply_for_series',
 			{
-				token_type_title
+				token_series_title
 			}
 		);
-		assert.strictEqual(parseInt(supply_for_type, 10), COPIES_TO_MINT);
+		assert.strictEqual(parseInt(supply_for_series, 10), COPIES_TO_MINT);
 
 		const tokens = await contractAccount.viewFunction(
 			contractId,
-			'nft_tokens_by_type',
+			'nft_tokens_by_series',
 			{
-				token_type_title
+				token_series_title
 			}
 		);
 		const [TOKEN_DELIMETER, TITLE_DELIMETER, EDITION_DELIMETER] = await contractAccount.viewFunction(
 			contractId,
-			'nft_get_type_format',
+			'nft_get_series_format',
 		);
 		const { token_id: _token_id, owner_id, metadata: { title, copies } } = tokens[tokens.length - 1];
 		assert.strictEqual(owner_id, contractId);
 		token_id = _token_id;
-		const formattedTitle = `${token_type_title}${TITLE_DELIMETER}${token_id.split(TOKEN_DELIMETER)[1]}${EDITION_DELIMETER}${copies}`;
+		const formattedTitle = `${token_series_title}${TITLE_DELIMETER}${token_id.split(TOKEN_DELIMETER)[1]}${EDITION_DELIMETER}${copies}`;
 		assert.strictEqual(title, formattedTitle);
 	});
 
@@ -184,29 +184,29 @@ describe('NFT Series', function () {
 			contractId,
 			methodName: 'cap_copies',
 			args: {
-				token_type_title,
+				token_series_title,
 			},
 			gas,
 		});
 
-		const token_type = await contractAccount.viewFunction(
+		const token_series = await contractAccount.viewFunction(
 			contractId,
-			'nft_get_type',
+			'nft_get_series_json',
 			{
-				token_type_title
+				token_series_title
 			}
 		);
 
-		assert.strictEqual(token_type.metadata.copies, COPIES_TO_MINT);
+		assert.strictEqual(token_series.metadata.copies, COPIES_TO_MINT);
 	});
 
 	it('should NOT allow the owner to mint more than copies', async function () {
 		try {
 			await contractAccount.functionCall({
 				contractId,
-				methodName: 'nft_mint_type',
+				methodName: 'nft_mint_series',
 				args: {
-					token_type_title,
+					token_series_title,
 					receiver_id: contractId
 				},
 				gas,

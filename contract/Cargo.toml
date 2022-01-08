@@ -8,8 +8,8 @@ edition = "2018"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-near-sdk = { git = "https://github.com/mattlockyer/near-sdk-rs", rev = "4007cf6" }
-near-contract-standards = { git = "https://github.com/mattlockyer/near-sdk-rs", rev = "4007cf6" }
+near-sdk = "4.0.0-pre.5"
+near-contract-standards = "4.0.0-pre.5"
 
 [profile.release]
 codegen-units = 1
