@@ -194,19 +194,19 @@ impl Contract {
             // None means a bad payout from bad NFT contract
             near_sdk::serde_json::from_slice::<Payout>(&value)
                 .ok()
-                .and_then(|payout| {
+                .and_then(|payout_struct| {
                     // gas to do 10 FT transfers (and definitely 10 NEAR transfers)
-                    if payout.len() + bids.len() > 10 || payout.is_empty() {
+                    if payout_struct.payout.len() + bids.len() > 10 || payout_struct.payout.is_empty() {
                         log!("Cannot have more than 10 royalties and sale.bids refunds");
                         None
                     } else {
                         // TODO off by 1 e.g. payouts are fractions of 3333 + 3333 + 3333
                         let mut remainder = price.0;
-                        for &value in payout.values() {
+                        for &value in payout_struct.payout.values() {
                             remainder = remainder.checked_sub(value.0)?;
                         }
                         if remainder == 0 || remainder == 1 {
-                            Some(payout)
+                            Some(payout_struct)
                         } else {
                             None
                         }
@@ -214,7 +214,7 @@ impl Contract {
                 })
         });
         // is payout option valid?
-        let payout = if let Some(payout_option) = payout_option {
+        let payout_struct = if let Some(payout_option) = payout_option {
             payout_option
         } else {
             if ft_token_id == self.near_ft {
@@ -229,14 +229,14 @@ impl Contract {
 
         // NEAR payouts
         if ft_token_id == self.near_ft.clone() {
-            for (receiver_id, amount) in payout {
+            for (receiver_id, amount) in payout_struct.payout {
                 Promise::new(receiver_id).transfer(amount.0);
             }
             // refund all FTs (won't be any)
             price
         } else {
             // FT payouts
-            for (receiver_id, amount) in payout {
+            for (receiver_id, amount) in payout_struct.payout {
                 ext_contract::ft_transfer(
                     receiver_id,
                     amount,

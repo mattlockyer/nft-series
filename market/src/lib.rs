@@ -33,7 +33,13 @@ pub type TokenType = String;
 pub type FungibleTokenId = AccountId;
 pub type ContractAndTokenId = String;
 // TODO: Capital U128
-pub type Payout = HashMap<AccountId, U128>;
+/// payout series for royalties to market
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+#[derive(Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct Payout {
+	payout: HashMap<AccountId, U128>
+}
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
